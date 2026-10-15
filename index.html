@@ -146,6 +146,28 @@ footer{padding:38px 56px;border-top:1px solid var(--line);display:flex;justify-c
 .gal-download{display:inline-block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;padding:14px 30px;border:1px solid var(--gold);color:var(--gold);transition:all .25s}
 .gal-download:hover{background:var(--gold);color:#0d0d0d}
 
+/* --- EN VIVO --- */
+#vivo.sec{padding-bottom:70px}
+#vivo h2{margin-bottom:40px}
+.reel-wrap{position:relative}
+.reel-wrap::after{content:'';position:absolute;top:0;bottom:28px;right:0;width:72px;pointer-events:none;background:linear-gradient(90deg,transparent,var(--bg));transition:opacity .3s}
+.reel-wrap.end::after{opacity:0}
+.reel{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 64px 28px;scroll-padding:0 64px;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.reel-item:first-child{margin-left:auto}
+.reel-item:last-child{margin-right:auto}
+.reel-item{flex:0 0 auto;height:min(60vh,500px,calc((100vw - 200px)/2.91));scroll-snap-align:start;border:1px solid var(--line2);background:#000;overflow:hidden}
+.reel-item.port{aspect-ratio:9/16}
+.reel-item.land{aspect-ratio:16/9}
+.reel-item video{width:100%;height:100%;object-fit:cover;display:block}
+.reel-ui{display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap}
+.reel-ui[hidden]{display:none}
+.swipe{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--mute);transition:opacity .4s}
+.swipe.gone{opacity:0}
+.reel-dots{display:flex;gap:8px}
+.reel-dots b{width:7px;height:7px;background:var(--line2);transition:all .3s}
+.reel-dots b.on{width:22px;background:var(--gold)}
+@media(max-width:768px){.reel{padding:6px 24px 24px;gap:12px;scroll-padding:0 24px}.reel-item{height:auto}.reel-item.port{width:62vw}.reel-item.land{width:82vw}}
+
 /* --- CABINAS COMPARTIDAS --- */
 #cabinas.sec{padding:56px 0 60px}
 #cabinas .sec-label{margin-bottom:26px}
@@ -233,6 +255,7 @@ body::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;ba
   <ul class="nav-links">
     <li><a href="#bio">Bio</a></li>
     <li><a href="#galeria">Galería</a></li>
+    <li><a href="#vivo">En vivo</a></li>
     <li><a href="#musica">Música</a></li>
     <li><a href="#cabinas">Cabinas</a></li>
     <li><a href="#rider">Rider</a></li>
@@ -311,6 +334,22 @@ body::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;ba
     <div class="gal-cta"><a class="gal-download" href="https://drive.google.com/drive/folders/1mqcwfTdjY_ft9dTDZoXJY-YRGn_fsl2q" target="_blank" rel="noopener">Descargar material de prensa ↗</a></div>
   </div>
 </section>
+<!-- EN VIVO -->
+<section id="vivo" class="sec">
+  <div class="shell">
+    <div class="sec-label reveal">En cabina</div>
+    <h2 class="reveal">En vivo</h2>
+  </div>
+  <div class="reel-wrap reveal" id="reel-wrap">
+    <div class="reel" id="reel">
+      <figure class="reel-item port"><video muted loop playsinline preload="none" poster="assets/v1.jpg" data-src="assets/v1.mp4" aria-label="Ignacio Zocco en cabina, primer plano"></video></figure>
+      <figure class="reel-item land"><video muted loop playsinline preload="none" poster="assets/v3.jpg" data-src="assets/v3.mp4" aria-label="Ignacio Zocco en cabina desde arriba, con la pista"></video></figure>
+      <figure class="reel-item port"><video muted loop playsinline preload="none" poster="assets/v2.jpg" data-src="assets/v2.mp4" aria-label="Ignacio Zocco en cabina, vista general"></video></figure>
+    </div>
+  </div>
+  <div class="reel-ui"><span class="swipe" id="swipe">Deslizá para ver más →</span><div class="reel-dots" id="reel-dots"></div></div>
+</section>
+
 <!-- MÚSICA -->
 <section id="musica" class="sec">
   <div class="shell">
@@ -621,6 +660,39 @@ window.addEventListener('scroll', () => {
     }).catch(function(err){ state('err', err.message === 'bad' ? 'Clave incorrecta. Probá de nuevo.' : 'No se pudo descargar. Intentá de nuevo.'); pw.select(); })
       .then(function(){ btn.disabled = false; });
   });
+})();
+(function(){
+  const reel = document.getElementById('reel');
+  if (!reel) return;
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const vids = Array.from(reel.querySelectorAll('video'));
+  if ('IntersectionObserver' in window) {
+    const vio = new IntersectionObserver(es => es.forEach(e => {
+      const v = e.target;
+      if (e.isIntersecting) { if (!v.src) v.src = v.dataset.src; if (!still) v.play().catch(() => {}); } else v.pause();
+    }), { threshold: .35 });
+    vids.forEach(v => vio.observe(v));
+  } else vids.forEach(v => { v.src = v.dataset.src; });
+  if (still) vids.forEach(v => { v.controls = true; });
+  const wrap = document.getElementById('reel-wrap'), dots = document.getElementById('reel-dots'), sw = document.getElementById('swipe');
+  const its = Array.from(reel.children), ui = sw.parentElement;
+  its.forEach(() => dots.appendChild(document.createElement('b')));
+  const ds = Array.from(dots.children);
+  function upd() {
+    const c = reel.scrollLeft + reel.clientWidth / 2;
+    let best = 0, bd = 1e9;
+    its.forEach((it, i) => { const d = Math.abs(it.offsetLeft + it.offsetWidth / 2 - c); if (d < bd) { bd = d; best = i; } });
+    const end = reel.scrollLeft + reel.clientWidth >= reel.scrollWidth - 8;
+    if (reel.scrollLeft < 8) best = 0;
+    if (end) best = its.length - 1;
+    ds.forEach((d, i) => d.classList.toggle('on', i === best));
+    wrap.classList.toggle('end', end);
+    ui.hidden = reel.scrollWidth <= reel.clientWidth + 1;
+    if (reel.scrollLeft > 40) sw.classList.add('gone');
+  }
+  reel.addEventListener('scroll', upd, { passive: true });
+  addEventListener('resize', upd);
+  upd();
 })();
 </script>
 </body>
