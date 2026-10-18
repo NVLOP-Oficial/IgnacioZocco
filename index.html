@@ -168,6 +168,28 @@ footer{padding:38px 56px;border-top:1px solid var(--line);display:flex;justify-c
 .reel-dots b.on{width:22px;background:var(--gold)}
 @media(max-width:768px){.reel{padding:6px 24px 24px;gap:12px;scroll-padding:0 24px}.reel-item{height:auto}.reel-item.port{width:62vw}.reel-item.land{width:82vw}}
 
+/* --- PRÓXIMAS FECHAS (Google Sheet) --- */
+.gigs{border-top:1px solid var(--line)}
+.gig{display:grid;grid-template-columns:130px 1fr auto;align-items:center;gap:32px;padding:26px 8px;border-bottom:1px solid var(--line);transition:background .3s,padding .3s}
+.gig:hover{background:linear-gradient(90deg,rgba(200,165,80,.09),transparent);padding-left:22px}
+.gig-date{display:flex;align-items:baseline;gap:12px}
+.gig-d{font-family:'Bebas Neue',sans-serif;font-size:3.4rem;line-height:1;color:var(--gold2)}
+.gig-m{font-size:10px;letter-spacing:.22em;line-height:1.6;text-transform:uppercase;color:var(--mute)}
+.gig-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.5rem,3vw,2.2rem);line-height:1.1;letter-spacing:.05em;text-transform:uppercase}
+.gig-where{font-size:14px;color:var(--mute);margin-top:6px}
+.gig .rider-download{margin-top:0;padding:11px 22px}
+.gigs-empty{padding:52px 8px;text-align:center;border:1px dashed var(--line2);color:var(--mute);line-height:1.7}
+.gigs-empty strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:1.8rem;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:var(--fg);margin-bottom:6px}
+.gigs-empty .c-cta{margin-top:22px}
+.gig-sk{height:92px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,transparent,rgba(200,165,80,.07),transparent) 0 0/200% 100%;animation:gigSk 1.6s linear infinite}
+@keyframes gigSk{to{background-position:-200% 0}}
+.gigs.fly .gig{grid-template-columns:140px 130px 1fr auto}
+.gig-fly{display:block;width:140px;border:1px solid var(--line2);overflow:hidden}
+.gig-fly img{display:block;width:100%;height:auto;max-height:190px;object-fit:cover;object-position:top;transition:transform .4s}
+.gig-fly:hover img{transform:scale(1.05)}
+@media(max-width:720px){.gig,.gigs.fly .gig{grid-template-columns:1fr;gap:14px}.gig .rider-download{justify-self:start}.gig-d{font-size:2.8rem}.gig-fly{width:min(240px,70vw)}}
+@media(prefers-reduced-motion:reduce){.gig-sk{animation:none}}
+
 /* --- CABINAS COMPARTIDAS --- */
 #cabinas.sec{padding:56px 0 60px}
 #cabinas .sec-label{margin-bottom:26px}
@@ -259,6 +281,7 @@ body::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;ba
     <li><a href="#bio">Bio</a></li>
     <li><a href="#galeria">Galería</a></li>
     <li><a href="#vivo">En vivo</a></li>
+    <li><a href="#fechas">Fechas</a></li>
     <li><a href="#musica">Música</a></li>
     <li><a href="#cabinas">Cabinas</a></li>
     <li><a href="#rider">Rider</a></li>
@@ -351,6 +374,15 @@ body::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;ba
     </div>
   </div>
   <div class="reel-ui"><span class="swipe" id="swipe">Deslizá para ver más →</span><div class="reel-dots" id="reel-dots"></div></div>
+</section>
+
+<!-- PRÓXIMAS FECHAS -->
+<section id="fechas" class="sec">
+  <div class="shell">
+    <div class="sec-label reveal">Agenda</div>
+    <h2 class="reveal">Próximas fechas</h2>
+    <div class="gigs reveal" id="gigs"><div class="gig-sk"></div><div class="gig-sk"></div><div class="gig-sk"></div></div>
+  </div>
 </section>
 
 <!-- MÚSICA -->
@@ -702,6 +734,45 @@ window.addEventListener('scroll', () => {
   addEventListener('resize', upd);
   upd();
 })();
+// PRÓXIMAS FECHAS: Google Sheet que edita Ignacio. Las que ya pasaron se ocultan solas.
+(function(){
+  const SHEET = '1QKYAp8WsK2nXrM_2OpkqT0dQHSS5QUKCA-XS9BTyjjo', box = document.getElementById('gigs');
+  if (!box) return;
+  const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const empty = msg => { box.innerHTML = '<div class="gigs-empty"><strong>' + msg + '</strong>Consultá disponibilidad con el equipo de booking.<br><a class="c-cta" href="mailto:nach.musicoficial@gmail.com">Escribir a booking</a></div>'; };
+  const parseDate = c => {
+    if (!c || c.v == null) return null;
+    const v = c.v; let m;
+    if (typeof v !== 'string') return null;
+    if ((m = /^Date\((\d+),(\d+),(\d+)/.exec(v))) return new Date(+m[1], +m[2], +m[3]);
+    if ((m = /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/.exec(v.trim()))) { let y = +m[3]; if (y < 100) y += 2000; let a = +m[1], b = +m[2]; if (b > 12 && a <= 12) { const t = a; a = b; b = t; } return new Date(y, b - 1, a); }
+    if ((m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v.trim()))) return new Date(+m[1], +m[2] - 1, +m[3]);
+    return null;
+  };
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const safeUrl = u => { u = String(u || '').trim(); if (u && !/^https?:\/\//i.test(u)) u = 'https://' + u; return /^https?:\/\/[^\s"<>]+$/i.test(u) ? u : ''; };
+  const txt = c => c && c.v != null ? String(c.f != null ? c.f : c.v).trim() : '';
+  const flySrc = u => { u = String(u || '').trim(); if (/^[\w.-]+\.(jpe?g|png|webp)$/i.test(u)) return 'assets/' + u; return /^https?:\/\/[^\s"<>]+$/i.test(u) ? u : ''; };
+  fetch('https://docs.google.com/spreadsheets/d/' + SHEET + '/gviz/tq?tqx=out:json&headers=1', { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then(t => {
+      const d = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1)), today = new Date(); today.setHours(0, 0, 0, 0);
+      const gigs = (d.table.rows || []).map(r => { const c = r.c || []; return { d: parseDate(c[0]), name: txt(c[1]), where: txt(c[2]), city: txt(c[3]), url: safeUrl(txt(c[4])), fly: flySrc(txt(c[5])) }; })
+        .filter(g => g.d && !isNaN(g.d) && g.d >= today && (g.name || g.where))
+        .sort((a, b) => a.d - b.d);
+      if (!gigs.length) return empty('Nuevas fechas muy pronto');
+      box.classList.toggle('fly', gigs.some(g => g.fly));
+      box.innerHTML = gigs.map(g => {
+        const place = [g.where, g.city].filter(Boolean).map(esc).join(' · ');
+        const fly = g.fly ? '<a class="gig-fly" href="' + g.fly + '" target="_blank" rel="noopener"><img src="' + g.fly + '" alt="Flyer ' + esc(g.name || g.where) + '" loading="lazy"></a>' : '<span></span>';
+        return '<div class="gig">' + (box.classList.contains('fly') ? fly : '') + '<div class="gig-date"><span class="gig-d">' + String(g.d.getDate()).padStart(2, '0') + '</span><span class="gig-m">' + MES[g.d.getMonth()] + '<br>' + g.d.getFullYear() + '</span></div>' +
+          '<div><div class="gig-name">' + esc(g.name || g.where) + '</div><div class="gig-where">' + place + '</div></div>' +
+          (g.url ? '<a class="rider-download" href="' + g.url + '" target="_blank" rel="noopener">Info / Tickets ↗</a>' : '<span></span>') + '</div>';
+      }).join('');
+    })
+    .catch(() => empty('Agenda en actualización'));
+})();
+// /PRÓXIMAS FECHAS
 </script>
 </body>
 </html>
