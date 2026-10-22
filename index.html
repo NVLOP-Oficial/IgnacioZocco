@@ -136,7 +136,7 @@ footer{padding:38px 56px;border-top:1px solid var(--line);display:flex;justify-c
 .wall-col{flex:1 1 0;min-width:0}
 .wall-track{display:flex;flex-direction:column;gap:var(--wg);will-change:transform;animation:wallUp var(--d,90s) linear infinite}
 .wall-col:nth-child(even) .wall-track{animation-name:wallDown}
-.wall:hover .wall-track,.wall.off .wall-track{animation-play-state:paused}
+.wall.off .wall-track{animation-play-state:paused}
 .wall-track img{display:block;width:100%;height:auto;background:#0d0d0d}
 @keyframes wallUp{to{transform:translateY(calc(-50% - var(--wg)/2))}}
 @keyframes wallDown{from{transform:translateY(calc(-50% - var(--wg)/2))}to{transform:none}}
